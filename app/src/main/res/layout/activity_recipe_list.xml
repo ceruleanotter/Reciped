@@ -9,7 +9,16 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@android:id/list"
-
         />
 
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab"
+        android:src="@drawable/ic_add_white_48dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:onClick="addNewRecipe"
+        />
 </RelativeLayout>

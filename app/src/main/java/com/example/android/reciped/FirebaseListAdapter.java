@@ -1,4 +1,4 @@
-package com.example.android.lylachat;
+package com.example.android.reciped;
 
 import android.app.Activity;
 import android.util.Log;
