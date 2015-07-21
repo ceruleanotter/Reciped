@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.firebase.client.AuthData;
@@ -15,8 +16,19 @@ import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
 import com.firebase.client.ValueEventListener;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+
 
 public class RecipeListActivity extends ListActivity {
+
+
+    /**
+     * Views *
+     */
+    @Bind(R.id.login_button)
+    Button mLoginButton;
+
 
     private Firebase mFirebaseRef;
     private User mUser;
@@ -39,11 +51,19 @@ public class RecipeListActivity extends ListActivity {
         super.onCreate(savedInstanceState);
         Firebase.setAndroidContext(this);
         setContentView(R.layout.activity_recipe_list);
+        ButterKnife.bind(this);
+
         mFirebaseRef = new Firebase(FIREBASE_URL);
 
 
         //something that updates the user if it changes
 
+        /*if( mFirebaseRef.getAuth() != null) {
+            setAuthenticatedUser(mFirebaseRef.getAuth());
+        } else {
+            Intent i = new Intent(this, LoginActivity.class);
+            startActivityForResult(i, LoginActivity.LOGIN_REQUEST);
+        }*/
 
         mAuthStateListener = new Firebase.AuthStateListener()
 
@@ -52,20 +72,11 @@ public class RecipeListActivity extends ListActivity {
             public void onAuthStateChanged(AuthData authData) {
                 setAuthenticatedUser(authData);
             }
-
-
         };
         /* Check if the user is authenticated with Firebase already. If this is the case we can set the authenticated
          * user and hide hide any login buttons */
         mFirebaseRef.addAuthStateListener(mAuthStateListener);
 
-
-        if( mFirebaseRef.getAuth() != null) {
-            setAuthenticatedUser(mFirebaseRef.getAuth());
-        } else {
-            Intent i = new Intent(this, LoginActivity.class);
-            startActivityForResult(i, LoginActivity.LOGIN_REQUEST);
-        }
 
         mListAdapter = new FirebaseListAdapter<Recipe>(mFirebaseRef.child(FIREBASE_RECIPE_PATH), Recipe.class,
                 R.layout.item_recipe, this) {
@@ -76,27 +87,6 @@ public class RecipeListActivity extends ListActivity {
             }
         };
         setListAdapter(mListAdapter);
-    }
-
-    private void setAuthenticatedUser(AuthData authData) {
-        //This is only called once
-        if (authData != null) {
-            mFirebaseRef.child(FIREBASE_USER_PATH).child(authData.getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot snapshot) {
-
-                    mUser = snapshot.getValue(User.class);
-                }
-
-                @Override
-                public void onCancelled(FirebaseError firebaseError) {
-                    System.out.println("The read failed: " + firebaseError.getMessage());
-                }
-            });
-        } else {
-            mUser = null; //In the case the authentication state is null
-        }
-
     }
 
 
@@ -151,4 +141,49 @@ public class RecipeListActivity extends ListActivity {
     }
 
 
+    /**
+     * for debugging purposes mostly, will log you out whenever the activity is stopped*
+     */
+
+
+    private void setAuthenticatedUser(AuthData authData) {
+        //This is only called once
+        if (authData != null) {
+            mFirebaseRef.child(FIREBASE_USER_PATH).child(authData.getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot snapshot) {
+
+                    mUser = snapshot.getValue(User.class);
+                    Log.e(LOG_TAG, "Logged in user " + mUser.getEmail());
+                    mLoginButton.setText(getString(R.string.logout));
+                }
+
+                @Override
+                public void onCancelled(FirebaseError firebaseError) {
+                    System.out.println("The read failed: " + firebaseError.getMessage());
+                }
+            });
+        } else {
+            Log.e(LOG_TAG, "Logged out user");
+            if (mUser != null) Log.e(LOG_TAG, "The user was " + mUser.getEmail());
+            mUser = null;
+
+        }
+    }
+
+    private void login() {
+        Intent i = new Intent(this, LoginActivity.class);
+        startActivityForResult(i, LoginActivity.LOGIN_REQUEST);
+    }
+
+    public void onLoginClicked(View view) {
+        if (mLoginButton.getText().toString() == getString(R.string.login)) {
+            assert mUser == null;
+            login();
+        } else {
+            mLoginButton.setText(getString(R.string.login));
+            mFirebaseRef.unauth();
+
+        }
+    }
 }

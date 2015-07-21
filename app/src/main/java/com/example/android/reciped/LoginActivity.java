@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -33,6 +34,7 @@ import java.util.List;
  */
 public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
 
+    private static final String LOG_TAG = LoginActivity.class.getSimpleName();
     public static final int LOGIN_REQUEST = 2;
     /**
      * A dummy authentication store containing known user names and passwords.
@@ -156,11 +158,15 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
                 @Override
                 public void onSuccess() {
 
+                    Log.e(LOG_TAG, "Created user in the backend with email " + email);
                     mFirebaseRef.authWithPassword(email, password, new Firebase.AuthResultHandler() {
                         @Override
                         public void onAuthenticated(AuthData authData) {
-                            Firebase usersRef = mFirebaseRef.child(RecipeListActivity.FIREBASE_USER_PATH);
-                            usersRef.push().setValue(new User(email, authData.getUid()));
+                            Firebase usersRef = mFirebaseRef.child(RecipeListActivity.FIREBASE_USER_PATH).child(authData.getUid());
+                            usersRef.setValue(new User(email, authData.getUid()));
+
+                            Log.e(LOG_TAG, "Created user " + authData.getUid() + " with email " + email);
+
                             Intent returnIntent = new Intent();
                             setResult(RESULT_OK,returnIntent);
                             finish();
@@ -169,7 +175,8 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
                         @Override
                         public void onAuthenticationError(FirebaseError firebaseError) {
                             // there was an error
-                            //Log.e("");
+                            Log.e(LOG_TAG, "Error creating user with email " + email);
+
                         }
                     });
 
@@ -177,6 +184,9 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
                 @Override
                 public void onError(FirebaseError firebaseError) {
                     mFirebaseRef.authWithPassword(email, password, null);
+                    Intent returnIntent = new Intent();
+                    setResult(RESULT_OK,returnIntent);
+                    finish();
                 }
             });
         }
