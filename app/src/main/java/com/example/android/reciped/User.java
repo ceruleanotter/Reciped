@@ -14,9 +14,9 @@ public class User {
     public User() {
     }
 
-    public User(String email, HashMap<String, Boolean> ownedRecipes, String uid) {
+    public User(String email,  String uid) {
         this.email = email;
-        this.ownedRecipes = ownedRecipes;
+        this.ownedRecipes = null;
         this.uid = uid;
     }
 

@@ -9,9 +9,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 
+import com.firebase.client.AuthData;
+import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
-
-import java.util.HashMap;
+import com.firebase.client.FirebaseError;
+import com.firebase.client.ValueEventListener;
 
 
 public class RecipeListActivity extends ListActivity {
@@ -19,6 +21,7 @@ public class RecipeListActivity extends ListActivity {
     private Firebase mFirebaseRef;
     private User mUser;
     private FirebaseListAdapter mListAdapter;
+    private Firebase.AuthStateListener mAuthStateListener;
 
 
     public static final String LOG_TAG = RecipeListActivity.class.getSimpleName();
@@ -26,8 +29,7 @@ public class RecipeListActivity extends ListActivity {
 
     public static final String FIREBASE_URL = "https://reciped.firebaseio.com/";
     public static final String FIREBASE_RECIPE_PATH = "recipe";
-
-
+    public static final String FIREBASE_USER_PATH = "user";
 
 
     private static final int NEW_RECIPE_REQUEST = 0;
@@ -38,18 +40,65 @@ public class RecipeListActivity extends ListActivity {
         Firebase.setAndroidContext(this);
         setContentView(R.layout.activity_recipe_list);
         mFirebaseRef = new Firebase(FIREBASE_URL);
-        mUser = new User("lyla.fujiwara@gmail.com", new HashMap<String, Boolean>(), "-1");
+
+
+        //something that updates the user if it changes
+
+
+        mAuthStateListener = new Firebase.AuthStateListener()
+
+        {
+            @Override
+            public void onAuthStateChanged(AuthData authData) {
+                setAuthenticatedUser(authData);
+            }
+
+
+        };
+        /* Check if the user is authenticated with Firebase already. If this is the case we can set the authenticated
+         * user and hide hide any login buttons */
+        mFirebaseRef.addAuthStateListener(mAuthStateListener);
+
+
+        if( mFirebaseRef.getAuth() != null) {
+            setAuthenticatedUser(mFirebaseRef.getAuth());
+        } else {
+            Intent i = new Intent(this, LoginActivity.class);
+            startActivityForResult(i, LoginActivity.LOGIN_REQUEST);
+        }
 
         mListAdapter = new FirebaseListAdapter<Recipe>(mFirebaseRef.child(FIREBASE_RECIPE_PATH), Recipe.class,
                 R.layout.item_recipe, this) {
             @Override
             protected void populateView(View v, Recipe model) {
-                ((TextView)v.findViewById(R.id.recipe_instructions)).setText(model.getInstructions());
-                ((TextView)v.findViewById(R.id.recipe_name)).setText(model.getName());
+                ((TextView) v.findViewById(R.id.recipe_instructions)).setText(model.getInstructions());
+                ((TextView) v.findViewById(R.id.recipe_name)).setText(model.getName());
             }
         };
         setListAdapter(mListAdapter);
     }
+
+    private void setAuthenticatedUser(AuthData authData) {
+        //This is only called once
+        if (authData != null) {
+            mFirebaseRef.child(FIREBASE_USER_PATH).child(authData.getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot snapshot) {
+
+                    mUser = snapshot.getValue(User.class);
+                }
+
+                @Override
+                public void onCancelled(FirebaseError firebaseError) {
+                    System.out.println("The read failed: " + firebaseError.getMessage());
+                }
+            });
+        } else {
+            mUser = null; //In the case the authentication state is null
+        }
+
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -87,12 +136,16 @@ public class RecipeListActivity extends ListActivity {
             if (resultCode == RESULT_OK) {
 
                 Log.e(LOG_TAG, "Just added a recipe with id " + data.getStringExtra("result"));
-                
+
 
                 /*String id = data.getStringExtra(RecipeDetailActivity.RECIPE_ID_EXTRA);
                 Firebase ref = new Firebase("https://reciped.firebaseio.com/");
                 mUser.addOwnedRecipe();
                 //we can grab from the db given the id...and then add to the user*/
+            }
+        } else if (requestCode == LoginActivity.LOGIN_REQUEST) {
+            if (resultCode == RESULT_OK) {
+
             }
         }
     }
