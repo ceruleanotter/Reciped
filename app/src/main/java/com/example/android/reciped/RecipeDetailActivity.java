@@ -3,9 +3,11 @@ package com.example.android.reciped;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.firebase.client.Firebase;
@@ -22,6 +24,9 @@ public class RecipeDetailActivity extends AppCompatActivity {
     @Bind(R.id.recipe_name)
     TextView mNameTextview;
 
+    @Bind(R.id.list_ingredients)
+    LinearLayout mIngredientsLinearLayout;
+
 
     public static final String USERNAME_EXTRA = "username_extra";
     public static final String RECIPE_ID_EXTRA = "recipe_id";
@@ -29,13 +34,18 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
 
     Firebase mFirebaseRecipeRef;
+    LayoutInflater mInflater;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recipe_detail);
         ButterKnife.bind(this);
-        mFirebaseRecipeRef = new Firebase(RecipeListActivity.FIREBASE_URL + RecipeListActivity.FIREBASE_RECIPE_PATH);
+        mFirebaseRecipeRef = new Firebase(RecipeListActivity.FIREBASE_URL + Recipe.FIREBASE_RECIPE_PATH);
+        mInflater = LayoutInflater.from(this);
+
+
 
     }
 
@@ -68,15 +78,23 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private void saveData() {
         Firebase thisRecipeRef = mFirebaseRecipeRef.push();
 
+
         thisRecipeRef.setValue(
                 new Recipe(mInstructionsTextView.getText().toString(),
                         mNameTextview.getText().toString(),
-                        "idlyla")
+                        mFirebaseRecipeRef.getAuth().getUid())
         );
 
         Intent returnIntent = new Intent();
-        returnIntent.putExtra("result", thisRecipeRef.getKey() );
+        returnIntent.putExtra(RECIPE_ID_EXTRA, thisRecipeRef.getKey());
         setResult(RESULT_OK,returnIntent);
         finish();
+    }
+
+
+    public void onAddNewIngredient(View view) {
+        View inflatedLayout= mInflater.inflate(R.layout.item_ingredient, null, false);
+        mIngredientsLinearLayout.addView(inflatedLayout,mIngredientsLinearLayout.indexOfChild(view));
+
     }
 }

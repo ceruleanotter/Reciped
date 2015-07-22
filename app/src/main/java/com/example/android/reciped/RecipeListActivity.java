@@ -16,6 +16,8 @@ import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
 import com.firebase.client.ValueEventListener;
 
+import java.util.HashMap;
+
 import butterknife.Bind;
 import butterknife.ButterKnife;
 
@@ -40,8 +42,8 @@ public class RecipeListActivity extends ListActivity {
 
 
     public static final String FIREBASE_URL = "https://reciped.firebaseio.com/";
-    public static final String FIREBASE_RECIPE_PATH = "recipe";
-    public static final String FIREBASE_USER_PATH = "user";
+
+
 
 
     private static final int NEW_RECIPE_REQUEST = 0;
@@ -78,7 +80,7 @@ public class RecipeListActivity extends ListActivity {
         mFirebaseRef.addAuthStateListener(mAuthStateListener);
 
 
-        mListAdapter = new FirebaseListAdapter<Recipe>(mFirebaseRef.child(FIREBASE_RECIPE_PATH), Recipe.class,
+        mListAdapter = new FirebaseListAdapter<Recipe>(mFirebaseRef.child(Recipe.FIREBASE_RECIPE_PATH), Recipe.class,
                 R.layout.item_recipe, this) {
             @Override
             protected void populateView(View v, Recipe model) {
@@ -125,7 +127,18 @@ public class RecipeListActivity extends ListActivity {
             // Make sure the request was successful
             if (resultCode == RESULT_OK) {
 
-                Log.e(LOG_TAG, "Just added a recipe with id " + data.getStringExtra("result"));
+                String recipeId = data.getStringExtra(RecipeDetailActivity.RECIPE_ID_EXTRA);
+                Firebase recipeBook = mFirebaseRef.child(User.FIREBASE_USER_PATH).child(mUser.getUid()).
+                        child(User.FIREBASE_RECIPE_BOOK_PATH);
+
+                HashMap<String, Object> recipeTag = new HashMap<>();
+                recipeTag.put(recipeId, new Boolean(true));
+                recipeBook.updateChildren(recipeTag);
+
+                Log.e(LOG_TAG, "Just added a recipe with id " + recipeId);
+
+
+
 
 
                 /*String id = data.getStringExtra(RecipeDetailActivity.RECIPE_ID_EXTRA);
@@ -141,15 +154,12 @@ public class RecipeListActivity extends ListActivity {
     }
 
 
-    /**
-     * for debugging purposes mostly, will log you out whenever the activity is stopped*
-     */
 
 
     private void setAuthenticatedUser(AuthData authData) {
         //This is only called once
         if (authData != null) {
-            mFirebaseRef.child(FIREBASE_USER_PATH).child(authData.getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+            mFirebaseRef.child(User.FIREBASE_USER_PATH).child(authData.getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot snapshot) {
 

@@ -162,7 +162,7 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
                     mFirebaseRef.authWithPassword(email, password, new Firebase.AuthResultHandler() {
                         @Override
                         public void onAuthenticated(AuthData authData) {
-                            Firebase usersRef = mFirebaseRef.child(RecipeListActivity.FIREBASE_USER_PATH).child(authData.getUid());
+                            Firebase usersRef = mFirebaseRef.child(User.FIREBASE_USER_PATH).child(authData.getUid());
                             usersRef.setValue(new User(email, authData.getUid()));
 
                             Log.e(LOG_TAG, "Created user " + authData.getUid() + " with email " + email);

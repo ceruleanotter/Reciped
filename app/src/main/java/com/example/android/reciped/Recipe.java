@@ -7,6 +7,7 @@ public class Recipe {
     private String owner;
     private String instructions;
     private String name;
+    public static final String FIREBASE_RECIPE_PATH = "recipe";
 
 
     public Recipe() {

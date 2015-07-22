@@ -9,7 +9,8 @@ public class User {
     private String email;
     private String uid;
     private HashMap<String, Boolean> ownedRecipes;
-
+    public static final String FIREBASE_USER_PATH = "user";
+    public static final String FIREBASE_RECIPE_BOOK_PATH = "recipe_book";
 
     public User() {
     }
