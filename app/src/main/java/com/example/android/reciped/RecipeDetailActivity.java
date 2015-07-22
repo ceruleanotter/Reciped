@@ -3,6 +3,7 @@ package com.example.android.reciped;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,6 +19,7 @@ import butterknife.ButterKnife;
 
 public class RecipeDetailActivity extends AppCompatActivity {
 
+    private static final String LOG_TAG = RecipeDetailActivity.class.getSimpleName();
     @Bind(R.id.recipe_instructions)
     TextView mInstructionsTextView;
 
@@ -96,5 +98,10 @@ public class RecipeDetailActivity extends AppCompatActivity {
         View inflatedLayout= mInflater.inflate(R.layout.item_ingredient, null, false);
         mIngredientsLinearLayout.addView(inflatedLayout,mIngredientsLinearLayout.indexOfChild(view));
 
+    }
+
+    public void onRemoveIngredient(View view) {
+        mIngredientsLinearLayout.removeView((View)view.getParent().getParent());
+        Log.e(LOG_TAG, "Removed the view " + view.toString());
     }
 }
