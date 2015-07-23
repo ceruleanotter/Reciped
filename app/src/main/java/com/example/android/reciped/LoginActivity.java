@@ -65,11 +65,6 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
         mFirebaseRef = new Firebase(RecipeListActivity.FIREBASE_URL);
 
 
-
-
-
-
-
         // Set up the login form.
         mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
         populateAutoComplete();
@@ -168,7 +163,7 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
                             Log.e(LOG_TAG, "Created user " + authData.getUid() + " with email " + email);
 
                             Intent returnIntent = new Intent();
-                            setResult(RESULT_OK,returnIntent);
+                            setResult(RESULT_OK, returnIntent);
                             finish();
                         }
 
@@ -181,12 +176,26 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
                     });
 
                 }
+
                 @Override
                 public void onError(FirebaseError firebaseError) {
-                    mFirebaseRef.authWithPassword(email, password, null);
-                    Intent returnIntent = new Intent();
-                    setResult(RESULT_OK,returnIntent);
-                    finish();
+                    mFirebaseRef.authWithPassword(email, password, new Firebase.AuthResultHandler() {
+                                @Override
+                                public void onAuthenticated(AuthData authData) {
+                                    Firebase usersRef = mFirebaseRef.child(User.FIREBASE_USER_PATH).child(authData.getUid());
+                                    Log.e(LOG_TAG, "Logged in user " + authData.getUid() + " with email " + email);
+                                    Intent returnIntent = new Intent();
+                                    setResult(RESULT_OK, returnIntent);
+                                    finish();
+                                }
+
+                                @Override
+                                public void onAuthenticationError(FirebaseError firebaseError) {
+                                    // there was an error
+                                    Log.e(LOG_TAG, "Error logging in user with email " + email);
+
+                                }
+                            });
                 }
             });
         }

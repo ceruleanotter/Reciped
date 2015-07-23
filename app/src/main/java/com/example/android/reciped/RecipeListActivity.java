@@ -7,7 +7,9 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+import android.widget.Filter;
 import android.widget.TextView;
 
 import com.firebase.client.AuthData;
@@ -16,7 +18,9 @@ import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
 import com.firebase.client.ValueEventListener;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -34,8 +38,9 @@ public class RecipeListActivity extends ListActivity {
 
     private Firebase mFirebaseRef;
     private User mUser;
-    private FirebaseListAdapter mListAdapter;
+    private FirebaseListAdapter<Recipe> mListAdapter;
     private Firebase.AuthStateListener mAuthStateListener;
+    private ValueEventListener mUserEventListener;
 
 
     public static final String LOG_TAG = RecipeListActivity.class.getSimpleName();
@@ -89,7 +94,16 @@ public class RecipeListActivity extends ListActivity {
             }
         };
         setListAdapter(mListAdapter);
+
+
+        /** Autocomplete **/
+        setupAutoComplete();
+
+
+
     }
+
+
 
 
     @Override
@@ -137,10 +151,6 @@ public class RecipeListActivity extends ListActivity {
 
                 Log.e(LOG_TAG, "Just added a recipe with id " + recipeId);
 
-
-
-
-
                 /*String id = data.getStringExtra(RecipeDetailActivity.RECIPE_ID_EXTRA);
                 Firebase ref = new Firebase("https://reciped.firebaseio.com/");
                 mUser.addOwnedRecipe();
@@ -158,24 +168,40 @@ public class RecipeListActivity extends ListActivity {
 
     private void setAuthenticatedUser(AuthData authData) {
         //This is only called once
+
         if (authData != null) {
-            mFirebaseRef.child(User.FIREBASE_USER_PATH).child(authData.getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+
+            mUserEventListener = new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot snapshot) {
-
+                    Log.e(LOG_TAG, "Had data snapshot " + snapshot.toString());
+                    boolean isLogin = (mUser == null);
                     mUser = snapshot.getValue(User.class);
-                    Log.e(LOG_TAG, "Logged in user " + mUser.getEmail());
-                    mLoginButton.setText(getString(R.string.logout));
+                    if (isLogin) {
+                        if (mUser != null) {
+                            mLoginButton.setText(getString(R.string.logout)); //changes to logout if we're still tracking a user
+                            Log.e(LOG_TAG, "Logged in user " + mUser.getEmail());
+                        } else {
+                            Log.e(LOG_TAG, "In strange state where mUser is null after getting the user");
+                        }
+                    }
                 }
 
                 @Override
                 public void onCancelled(FirebaseError firebaseError) {
                     System.out.println("The read failed: " + firebaseError.getMessage());
                 }
-            });
+            };
+            mFirebaseRef.child(User.FIREBASE_USER_PATH).child(authData.getUid()).
+                    addValueEventListener(mUserEventListener);
         } else {
             Log.e(LOG_TAG, "Logged out user");
-            if (mUser != null) Log.e(LOG_TAG, "The user was " + mUser.getEmail());
+            if (mUser != null) {
+                Log.e(LOG_TAG, "The user was " + mUser.getEmail());
+                mFirebaseRef.child(User.FIREBASE_USER_PATH).child(mUser.getUid()).removeEventListener(mUserEventListener);
+                mUserEventListener = null;
+            }
+            assert mUserEventListener == null; //Crazy if this is not true
             mUser = null;
 
         }
@@ -196,4 +222,73 @@ public class RecipeListActivity extends ListActivity {
 
         }
     }
+
+    private void setupAutoComplete() {
+        final FirebaseAutocompleteAdapter<User> autocompleteFBAdapter = new FirebaseAutocompleteAdapter<User>(mFirebaseRef.child(User.FIREBASE_USER_PATH),
+                User.class,
+                android.R.layout.simple_dropdown_item_1line, this) {
+
+            @Override
+            protected String massageItemToString(User model) {
+                return model.getEmail();
+            }
+
+            private final FirebaseAutocompleteAdapter<User> thisAdapter = this;
+
+
+            @Override
+            protected void populateView(View v, User model) {
+                ((TextView) v.findViewById(android.R.id.text1)).setText(model.getEmail());
+
+            }
+
+            @Override
+            public Filter getFilter() {
+                return new Filter() {
+                    @Override
+                    protected FilterResults performFiltering(CharSequence charSequence) {
+                        Iterator<User> filterIt = thisAdapter.getmModels().iterator();
+                        FilterResults results = new FilterResults();
+                        ArrayList<User> resultsList = new ArrayList<User>();
+
+                        while (filterIt.hasNext()){
+                            User currentUser = filterIt.next();
+                            if (currentUser.getEmail().contains(charSequence)) {
+                                resultsList.add(currentUser);
+                            }
+                        }
+                        results.values = resultsList;
+                        results.count = resultsList.size();
+
+                        return results;
+                    }
+
+                    @Override
+                    protected void publishResults(CharSequence charSequence, FilterResults filterResults) {
+                        if (filterResults.count > 0) {
+
+                            thisAdapter.mResults.clear();
+                            thisAdapter.mResults.addAll((ArrayList<User>) filterResults.values);
+                            notifyDataSetChanged();
+                        } else {
+                            notifyDataSetInvalidated();
+                        }
+
+                    }
+                };
+            }
+
+
+        };
+
+
+
+        AutoCompleteTextView textView = (AutoCompleteTextView)
+                findViewById(R.id.search);
+        textView.setAdapter(autocompleteFBAdapter);
+    }
+
+
+
+
 }

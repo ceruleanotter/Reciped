@@ -33,8 +33,8 @@ public abstract class FirebaseListAdapter<T> extends BaseAdapter {
 
     private Query mRef;
     private Class<T> mModelClass;
-    private int mLayout;
-    private LayoutInflater mInflater;
+    protected int mLayout;
+    protected LayoutInflater mInflater;
     private List<T> mModels;
     private Map<String, T> mModelKeys;
     private ChildEventListener mListener;
@@ -170,6 +170,10 @@ public abstract class FirebaseListAdapter<T> extends BaseAdapter {
         // Call out to subclass to marshall this model into the provided view
         populateView(view, model);
         return view;
+    }
+
+    public List<T> getmModels() {
+        return mModels;
     }
 
     /**
