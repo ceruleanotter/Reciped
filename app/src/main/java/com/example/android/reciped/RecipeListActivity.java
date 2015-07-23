@@ -3,10 +3,13 @@ package com.example.android.reciped;
 import android.app.ListActivity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.Filter;
@@ -16,6 +19,7 @@ import com.firebase.client.AuthData;
 import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
+import com.firebase.client.Query;
 import com.firebase.client.ValueEventListener;
 
 import java.util.ArrayList;
@@ -36,41 +40,32 @@ public class RecipeListActivity extends ListActivity {
     Button mLoginButton;
 
 
-    private Firebase mFirebaseRef;
     private User mUser;
     private FirebaseListAdapter<Recipe> mListAdapter;
     private Firebase.AuthStateListener mAuthStateListener;
     private ValueEventListener mUserEventListener;
+    private Query mLastFirebase;
 
 
     public static final String LOG_TAG = RecipeListActivity.class.getSimpleName();
 
 
     public static final String FIREBASE_URL = "https://reciped.firebaseio.com/";
-
-
-
+    private static Firebase FIREBASE_REF_FULL_RECIPE_LIST;
+    private static Firebase FIREBASE_REF_FULL_USER_LIST;
 
     private static final int NEW_RECIPE_REQUEST = 0;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Firebase.setAndroidContext(this);
+        FIREBASE_REF_FULL_RECIPE_LIST = new Firebase(FIREBASE_URL).child(Recipe.FIREBASE_RECIPE_PATH);
+        FIREBASE_REF_FULL_USER_LIST = new Firebase(FIREBASE_URL).child(User.FIREBASE_USER_PATH);
         setContentView(R.layout.activity_recipe_list);
         ButterKnife.bind(this);
 
-        mFirebaseRef = new Firebase(FIREBASE_URL);
-
-
-        //something that updates the user if it changes
-
-        /*if( mFirebaseRef.getAuth() != null) {
-            setAuthenticatedUser(mFirebaseRef.getAuth());
-        } else {
-            Intent i = new Intent(this, LoginActivity.class);
-            startActivityForResult(i, LoginActivity.LOGIN_REQUEST);
-        }*/
 
         mAuthStateListener = new Firebase.AuthStateListener()
 
@@ -82,28 +77,17 @@ public class RecipeListActivity extends ListActivity {
         };
         /* Check if the user is authenticated with Firebase already. If this is the case we can set the authenticated
          * user and hide hide any login buttons */
-        mFirebaseRef.addAuthStateListener(mAuthStateListener);
+        FIREBASE_REF_FULL_RECIPE_LIST.addAuthStateListener(mAuthStateListener);
+        
 
-
-        mListAdapter = new FirebaseListAdapter<Recipe>(mFirebaseRef.child(Recipe.FIREBASE_RECIPE_PATH), Recipe.class,
-                R.layout.item_recipe, this) {
-            @Override
-            protected void populateView(View v, Recipe model) {
-                ((TextView) v.findViewById(R.id.recipe_instructions)).setText(model.getInstructions());
-                ((TextView) v.findViewById(R.id.recipe_name)).setText(model.getName());
-            }
-        };
-        setListAdapter(mListAdapter);
-
+        /**Add the Recipe List Adapter**/
+        changeRecipeAdapterQuery(FIREBASE_REF_FULL_RECIPE_LIST);
 
         /** Autocomplete **/
         setupAutoComplete();
 
 
-
     }
-
-
 
 
     @Override
@@ -127,9 +111,30 @@ public class RecipeListActivity extends ListActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void addNewRecipe(View v) {
+
+    private void changeRecipeAdapterQuery(Query q) {
+        if (!q.equals(mLastFirebase)) {
+            mLastFirebase = q;
+            if (mListAdapter != null) {
+                mListAdapter.cleanup();
+            }
+
+            mListAdapter = new FirebaseListAdapter<Recipe>(q, Recipe.class,
+                    R.layout.item_recipe, this) {
+                @Override
+                protected void populateView(View v, Recipe model) {
+                    ((TextView) v.findViewById(R.id.recipe_instructions)).setText(model.getInstructions());
+                    ((TextView) v.findViewById(R.id.recipe_name)).setText(model.getName());
+                }
+            };
+            setListAdapter(mListAdapter);
+        }
+    }
+
+
+    public void onAddNewRecipe(View v) {
         Intent i = new Intent(this, RecipeDetailActivity.class);
-        i.putExtra(RecipeDetailActivity.USERNAME_EXTRA, mUser.getUid());
+        i.putExtra(RecipeDetailActivity.USERNAME_EXTRA, mUser.getEmail());
         startActivityForResult(i, NEW_RECIPE_REQUEST);// get what's added and add it
 
     }
@@ -142,7 +147,7 @@ public class RecipeListActivity extends ListActivity {
             if (resultCode == RESULT_OK) {
 
                 String recipeId = data.getStringExtra(RecipeDetailActivity.RECIPE_ID_EXTRA);
-                Firebase recipeBook = mFirebaseRef.child(User.FIREBASE_USER_PATH).child(mUser.getUid()).
+                Firebase recipeBook = FIREBASE_REF_FULL_USER_LIST.child(mUser.getUid()).
                         child(User.FIREBASE_RECIPE_BOOK_PATH);
 
                 HashMap<String, Object> recipeTag = new HashMap<>();
@@ -162,8 +167,6 @@ public class RecipeListActivity extends ListActivity {
             }
         }
     }
-
-
 
 
     private void setAuthenticatedUser(AuthData authData) {
@@ -192,13 +195,13 @@ public class RecipeListActivity extends ListActivity {
                     System.out.println("The read failed: " + firebaseError.getMessage());
                 }
             };
-            mFirebaseRef.child(User.FIREBASE_USER_PATH).child(authData.getUid()).
+            FIREBASE_REF_FULL_USER_LIST.child(authData.getUid()).
                     addValueEventListener(mUserEventListener);
         } else {
             Log.e(LOG_TAG, "Logged out user");
             if (mUser != null) {
                 Log.e(LOG_TAG, "The user was " + mUser.getEmail());
-                mFirebaseRef.child(User.FIREBASE_USER_PATH).child(mUser.getUid()).removeEventListener(mUserEventListener);
+                FIREBASE_REF_FULL_USER_LIST.child(mUser.getUid()).removeEventListener(mUserEventListener);
                 mUserEventListener = null;
             }
             assert mUserEventListener == null; //Crazy if this is not true
@@ -218,13 +221,13 @@ public class RecipeListActivity extends ListActivity {
             login();
         } else {
             mLoginButton.setText(getString(R.string.login));
-            mFirebaseRef.unauth();
+            FIREBASE_REF_FULL_RECIPE_LIST.unauth();
 
         }
     }
 
     private void setupAutoComplete() {
-        final FirebaseAutocompleteAdapter<User> autocompleteFBAdapter = new FirebaseAutocompleteAdapter<User>(mFirebaseRef.child(User.FIREBASE_USER_PATH),
+        final FirebaseAutocompleteAdapter<User> autocompleteFBAdapter = new FirebaseAutocompleteAdapter<User>(FIREBASE_REF_FULL_USER_LIST,
                 User.class,
                 android.R.layout.simple_dropdown_item_1line, this) {
 
@@ -251,7 +254,7 @@ public class RecipeListActivity extends ListActivity {
                         FilterResults results = new FilterResults();
                         ArrayList<User> resultsList = new ArrayList<User>();
 
-                        while (filterIt.hasNext()){
+                        while (filterIt.hasNext()) {
                             User currentUser = filterIt.next();
                             if (currentUser.getEmail().contains(charSequence)) {
                                 resultsList.add(currentUser);
@@ -282,13 +285,38 @@ public class RecipeListActivity extends ListActivity {
         };
 
 
-
         AutoCompleteTextView textView = (AutoCompleteTextView)
                 findViewById(R.id.search);
         textView.setAdapter(autocompleteFBAdapter);
+        textView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                String email = autocompleteFBAdapter.getItem(i);
+
+                changeRecipeAdapterQuery(FIREBASE_REF_FULL_RECIPE_LIST.
+                        orderByChild("owner").equalTo(email));
+            }
+        });
+        textView.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                if (editable.length() < 2) {
+                    changeRecipeAdapterQuery(FIREBASE_REF_FULL_RECIPE_LIST);
+                }
+
+            }
+        });
     }
-
-
 
 
 }

@@ -35,8 +35,11 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
 
 
-    Firebase mFirebaseRecipeRef;
-    LayoutInflater mInflater;
+
+
+    private Firebase mFirebaseRecipeRef;
+    private LayoutInflater mInflater;
+    private String mUserEmail;
 
 
     @Override
@@ -46,6 +49,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         mFirebaseRecipeRef = new Firebase(RecipeListActivity.FIREBASE_URL + Recipe.FIREBASE_RECIPE_PATH);
         mInflater = LayoutInflater.from(this);
+        mUserEmail = getIntent().getStringExtra(USERNAME_EXTRA);
 
 
 
@@ -94,7 +98,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
         Recipe currentRecipe = new Recipe(mInstructionsTextView.getText().toString(),
                 mNameTextview.getText().toString(),
-                mFirebaseRecipeRef.getAuth().getUid());
+                mUserEmail);
 
         //Subtract 1 for the + button
         for (int i = 0; i < mIngredientsLinearLayout.getChildCount()-1; i++) {

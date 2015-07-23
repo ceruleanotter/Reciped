@@ -48,6 +48,6 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
         android:clickable="true"
-        android:onClick="addNewRecipe"
+        android:onClick="onAddNewRecipe"
         android:src="@drawable/ic_add_white_48dp" />
 </RelativeLayout>
