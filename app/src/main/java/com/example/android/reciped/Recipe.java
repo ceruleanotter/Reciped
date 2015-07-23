@@ -1,5 +1,8 @@
 package com.example.android.reciped;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by lyla on 7/17/15.
  */
@@ -7,6 +10,7 @@ public class Recipe {
     private String owner;
     private String instructions;
     private String name;
+    private List<Ingredient> ingredients = new ArrayList<>();
     public static final String FIREBASE_RECIPE_PATH = "recipe";
 
 
@@ -17,6 +21,10 @@ public class Recipe {
         this.instructions = instructions;
         this.name = name;
         this.owner = owner;
+    }
+
+    public void addIngredient(String name, int amount) {
+        ingredients.add(new Ingredient(name, amount));
     }
 
     public String getOwner() {
@@ -33,5 +41,9 @@ public class Recipe {
 
     public String getName() {
         return name;
+    }
+
+    public List<Ingredient> getIngredients() {
+        return ingredients;
     }
 }

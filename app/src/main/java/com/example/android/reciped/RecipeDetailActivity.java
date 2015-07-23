@@ -77,26 +77,9 @@ public class RecipeDetailActivity extends AppCompatActivity {
         saveData();
     }
 
-    private void saveData() {
-        Firebase thisRecipeRef = mFirebaseRecipeRef.push();
-
-
-        thisRecipeRef.setValue(
-                new Recipe(mInstructionsTextView.getText().toString(),
-                        mNameTextview.getText().toString(),
-                        mFirebaseRecipeRef.getAuth().getUid())
-        );
-
-        Intent returnIntent = new Intent();
-        returnIntent.putExtra(RECIPE_ID_EXTRA, thisRecipeRef.getKey());
-        setResult(RESULT_OK,returnIntent);
-        finish();
-    }
-
-
     public void onAddNewIngredient(View view) {
         View inflatedLayout= mInflater.inflate(R.layout.item_ingredient, null, false);
-        mIngredientsLinearLayout.addView(inflatedLayout,mIngredientsLinearLayout.indexOfChild(view));
+        mIngredientsLinearLayout.addView(inflatedLayout, mIngredientsLinearLayout.indexOfChild(view));
 
     }
 
@@ -104,4 +87,45 @@ public class RecipeDetailActivity extends AppCompatActivity {
         mIngredientsLinearLayout.removeView((View)view.getParent().getParent());
         Log.e(LOG_TAG, "Removed the view " + view.toString());
     }
+
+    private void saveData() {
+        Firebase thisRecipeRef = mFirebaseRecipeRef.push();
+
+
+        Recipe currentRecipe = new Recipe(mInstructionsTextView.getText().toString(),
+                mNameTextview.getText().toString(),
+                mFirebaseRecipeRef.getAuth().getUid());
+
+        //Subtract 1 for the + button
+        for (int i = 0; i < mIngredientsLinearLayout.getChildCount()-1; i++) {
+            View currentRow =mIngredientsLinearLayout.getChildAt(i);
+
+
+
+            String currentName = getStringFromView(currentRow, R.id.ingredient_name);
+            String currentAmountString = getStringFromView(currentRow, R.id.ingredient_amount);
+            if (!currentName.isEmpty() && ! currentAmountString.isEmpty()) {
+                int currentAmount = Integer.parseInt(currentAmountString);
+                currentRecipe.addIngredient(currentName, currentAmount);
+            } else {
+                Log.e(LOG_TAG, "Current name: " + currentName + " currentAmount: " + currentAmountString + " is empty");
+            }
+
+        }
+
+        thisRecipeRef.setValue(currentRecipe);
+
+        Intent returnIntent = new Intent();
+        returnIntent.putExtra(RECIPE_ID_EXTRA, thisRecipeRef.getKey());
+        setResult(RESULT_OK, returnIntent);
+        finish();
+    }
+
+
+    private String getStringFromView(View v, int id) {
+        return ((TextView) v.findViewById(id)).getText().toString().trim();
+    }
+
+
+
 }
