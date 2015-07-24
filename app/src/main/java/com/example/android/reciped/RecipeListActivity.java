@@ -12,7 +12,6 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
-import android.widget.Filter;
 import android.widget.TextView;
 
 import com.firebase.client.AuthData;
@@ -23,9 +22,7 @@ import com.firebase.client.Query;
 import com.firebase.client.ServerValue;
 import com.firebase.client.ValueEventListener;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -192,10 +189,6 @@ public class RecipeListActivity extends ListActivity {
 
                 Log.e(LOG_TAG, "Just added a recipe with id " + recipeId);
 
-                /*String id = data.getStringExtra(RecipeDetailActivity.RECIPE_ID_EXTRA);
-                Firebase ref = new Firebase("https://reciped.firebaseio.com/");
-                mUser.addOwnedRecipe();
-                //we can grab from the db given the id...and then add to the user*/
             }
         } else if (requestCode == LoginActivity.LOGIN_REQUEST) {
             if (resultCode == RESULT_OK) {
@@ -273,8 +266,6 @@ public class RecipeListActivity extends ListActivity {
                 return model.getEmail();
             }
 
-            private final FirebaseAutocompleteAdapter<User> thisAdapter = this;
-
 
             @Override
             protected void populateView(View v, User model) {
@@ -283,42 +274,9 @@ public class RecipeListActivity extends ListActivity {
             }
 
             @Override
-            public Filter getFilter() {
-                return new Filter() {
-                    @Override
-                    protected FilterResults performFiltering(CharSequence charSequence) {
-                        Iterator<User> filterIt = thisAdapter.getmModels().iterator();
-                        FilterResults results = new FilterResults();
-                        ArrayList<User> resultsList = new ArrayList<User>();
-
-                        while (filterIt.hasNext()) {
-                            User currentUser = filterIt.next();
-                            if (currentUser.getEmail().contains(charSequence)) {
-                                resultsList.add(currentUser);
-                            }
-                        }
-                        results.values = resultsList;
-                        results.count = resultsList.size();
-
-                        return results;
-                    }
-
-                    @Override
-                    protected void publishResults(CharSequence charSequence, FilterResults filterResults) {
-                        if (filterResults.count > 0) {
-
-                            thisAdapter.mResults.clear();
-                            thisAdapter.mResults.addAll((ArrayList<User>) filterResults.values);
-                            notifyDataSetChanged();
-                        } else {
-                            notifyDataSetInvalidated();
-                        }
-
-                    }
-                };
+            protected boolean shouldAddToList(User currentObject, CharSequence enteredString) {
+                return currentObject.getEmail().contains(enteredString);
             }
-
-
         };
 
         mSearchTextView.setAdapter(autocompleteFBAdapter);
