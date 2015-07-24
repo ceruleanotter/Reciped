@@ -8,10 +8,14 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
+import com.firebase.client.FirebaseError;
+import com.firebase.client.ValueEventListener;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -34,12 +38,11 @@ public class RecipeDetailActivity extends AppCompatActivity {
     public static final String RECIPE_ID_EXTRA = "recipe_id";
 
 
-
-
-
     private Firebase mFirebaseRecipeRef;
+    private Firebase mFirebaseRecipeRefSpecificRef;
     private LayoutInflater mInflater;
     private String mUserEmail;
+    private String mKey = null;
 
 
     @Override
@@ -48,8 +51,17 @@ public class RecipeDetailActivity extends AppCompatActivity {
         setContentView(R.layout.activity_recipe_detail);
         ButterKnife.bind(this);
         mFirebaseRecipeRef = new Firebase(RecipeListActivity.FIREBASE_URL + Recipe.FIREBASE_RECIPE_PATH);
+        mFirebaseRecipeRefSpecificRef = null;
         mInflater = LayoutInflater.from(this);
         mUserEmail = getIntent().getStringExtra(USERNAME_EXTRA);
+
+
+        if (getIntent().hasExtra(RECIPE_ID_EXTRA)) {
+            mKey = getIntent().getStringExtra(RECIPE_ID_EXTRA);
+            populateViewFromData(mKey);
+        } else {
+            addIngredient(null);
+        }
 
 
 
@@ -82,33 +94,45 @@ public class RecipeDetailActivity extends AppCompatActivity {
     }
 
     public void onAddNewIngredient(View view) {
-        View inflatedLayout= mInflater.inflate(R.layout.item_ingredient, null, false);
-        mIngredientsLinearLayout.addView(inflatedLayout, mIngredientsLinearLayout.indexOfChild(view));
+        addIngredient(null);
 
     }
 
+    public void addIngredient(Ingredient i) {
+        View inflatedLayout = mInflater.inflate(R.layout.item_ingredient, null, false);
+        if (i != null) {
+            ((EditText) inflatedLayout.findViewById(R.id.ingredient_name)).setText(i.getName());
+            ((EditText) inflatedLayout.findViewById(R.id.ingredient_amount)).setText(i.getAmount()+"");
+        }
+        mIngredientsLinearLayout.addView(inflatedLayout, mIngredientsLinearLayout.getChildCount() - 1);
+    }
+
+
     public void onRemoveIngredient(View view) {
-        mIngredientsLinearLayout.removeView((View)view.getParent().getParent());
+        mIngredientsLinearLayout.removeView((View) view.getParent().getParent());
         Log.e(LOG_TAG, "Removed the view " + view.toString());
     }
 
     private void saveData() {
-        Firebase thisRecipeRef = mFirebaseRecipeRef.push();
-
+        Firebase thisRecipeRef = null;
+        if (mKey == null) {
+            thisRecipeRef = mFirebaseRecipeRef.push();
+        } else {
+            thisRecipeRef = mFirebaseRecipeRef.child(mKey);
+        }
 
         Recipe currentRecipe = new Recipe(mInstructionsTextView.getText().toString(),
                 mNameTextview.getText().toString(),
                 mUserEmail);
 
         //Subtract 1 for the + button
-        for (int i = 0; i < mIngredientsLinearLayout.getChildCount()-1; i++) {
-            View currentRow =mIngredientsLinearLayout.getChildAt(i);
-
+        for (int i = 0; i < mIngredientsLinearLayout.getChildCount() - 1; i++) {
+            View currentRow = mIngredientsLinearLayout.getChildAt(i);
 
 
             String currentName = getStringFromView(currentRow, R.id.ingredient_name);
             String currentAmountString = getStringFromView(currentRow, R.id.ingredient_amount);
-            if (!currentName.isEmpty() && ! currentAmountString.isEmpty()) {
+            if (!currentName.isEmpty() && !currentAmountString.isEmpty()) {
                 int currentAmount = Integer.parseInt(currentAmountString);
                 currentRecipe.addIngredient(currentName, currentAmount);
             } else {
@@ -116,6 +140,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
             }
 
         }
+
 
         thisRecipeRef.setValue(currentRecipe);
 
@@ -130,6 +155,25 @@ public class RecipeDetailActivity extends AppCompatActivity {
         return ((TextView) v.findViewById(id)).getText().toString().trim();
     }
 
+    private void populateViewFromData(String key) {
+        mFirebaseRecipeRefSpecificRef = mFirebaseRecipeRef.child(key);
+        mFirebaseRecipeRefSpecificRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                Recipe r = dataSnapshot.getValue(Recipe.class);
+                mInstructionsTextView.setText(r.getInstructions());
+                mNameTextview.setText(r.getName());
+                for (Ingredient currentIngredient : r.getIngredients()) {
+                    addIngredient(currentIngredient);
+                }
+            }
+
+            @Override
+            public void onCancelled(FirebaseError firebaseError) {
+
+            }
+        });
+    }
 
 
 }

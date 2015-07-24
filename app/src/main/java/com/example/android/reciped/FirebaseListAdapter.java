@@ -11,11 +11,11 @@ import com.firebase.client.ChildEventListener;
 import com.firebase.client.DataSnapshot;
 import com.firebase.client.FirebaseError;
 import com.firebase.client.Query;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author greg
@@ -36,7 +36,7 @@ public abstract class FirebaseListAdapter<T> extends BaseAdapter {
     protected int mLayout;
     protected LayoutInflater mInflater;
     private List<T> mModels;
-    private Map<String, T> mModelKeys;
+    private BiMap<String, T> mModelKeys; /*change this to a bimap to be able to get the key for passing in as an extra when the list is clicked*/
     private ChildEventListener mListener;
 
 
@@ -54,7 +54,7 @@ public abstract class FirebaseListAdapter<T> extends BaseAdapter {
         this.mLayout = mLayout;
         mInflater = activity.getLayoutInflater();
         mModels = new ArrayList<T>();
-        mModelKeys = new HashMap<String, T>();
+        mModelKeys = HashBiMap.create();
         // Look for all child events. We will then map them to our own internal ArrayList, which backs ListView
         mListener = this.mRef.addChildEventListener(new ChildEventListener() {
             @Override
@@ -186,4 +186,9 @@ public abstract class FirebaseListAdapter<T> extends BaseAdapter {
      * @param model The object containing the data used to populate the view
      */
     protected abstract void populateView(View v, T model);
+
+    public String getKey(int i) {
+        return mModelKeys.inverse().get(mModels.get(i));
+    }
+
 }

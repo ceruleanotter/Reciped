@@ -78,7 +78,7 @@ public class RecipeListActivity extends ListActivity {
         /* Check if the user is authenticated with Firebase already. If this is the case we can set the authenticated
          * user and hide hide any login buttons */
         FIREBASE_REF_FULL_RECIPE_LIST.addAuthStateListener(mAuthStateListener);
-        
+
 
         /**Add the Recipe List Adapter**/
         changeRecipeAdapterQuery(FIREBASE_REF_FULL_RECIPE_LIST);
@@ -128,15 +128,26 @@ public class RecipeListActivity extends ListActivity {
                 }
             };
             setListAdapter(mListAdapter);
+            this.getListView().setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                    openRecipe(mListAdapter.getKey(i));
+
+                }
+            });
         }
     }
 
 
     public void onAddNewRecipe(View v) {
+        openRecipe(null);
+    }
+
+    private void openRecipe(String key) {
         Intent i = new Intent(this, RecipeDetailActivity.class);
         i.putExtra(RecipeDetailActivity.USERNAME_EXTRA, mUser.getEmail());
+        if (key != null) i.putExtra(RecipeDetailActivity.RECIPE_ID_EXTRA, key);
         startActivityForResult(i, NEW_RECIPE_REQUEST);// get what's added and add it
-
     }
 
     @Override

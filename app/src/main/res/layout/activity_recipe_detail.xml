@@ -45,7 +45,6 @@
             android:orientation="vertical"
             android:animateLayoutChanges="true">
 
-            <include layout="@layout/item_ingredient"/>
 
             <ImageButton
                 android:layout_width="26dp"
