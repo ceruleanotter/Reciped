@@ -256,28 +256,8 @@ public class RecipeListActivity extends ListActivity {
         }
     }
 
-    private void setupAutoComplete() {
-        final FirebaseAutocompleteAdapter<User> autocompleteFBAdapter = new FirebaseAutocompleteAdapter<User>(FIREBASE_REF_FULL_USER_LIST,
-                User.class,
-                android.R.layout.simple_dropdown_item_1line, this) {
-
-            @Override
-            protected String massageItemToString(User model) {
-                return model.getEmail();
-            }
-
-
-            @Override
-            protected void populateView(View v, User model) {
-                ((TextView) v.findViewById(android.R.id.text1)).setText(model.getEmail());
-
-            }
-
-            @Override
-            protected boolean shouldAddToList(User currentObject, CharSequence enteredString) {
-                return currentObject.getEmail().contains(enteredString);
-            }
-        };
+    private void setupAutoComplete(){
+        final UserAutocompleteAdapter autocompleteFBAdapter = new UserAutocompleteAdapter(this);
 
         mSearchTextView.setAdapter(autocompleteFBAdapter);
         mSearchTextView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
