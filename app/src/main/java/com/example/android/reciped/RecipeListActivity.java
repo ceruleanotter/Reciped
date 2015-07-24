@@ -20,6 +20,7 @@ import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
 import com.firebase.client.Query;
+import com.firebase.client.ServerValue;
 import com.firebase.client.ValueEventListener;
 
 import java.util.ArrayList;
@@ -39,6 +40,8 @@ public class RecipeListActivity extends ListActivity {
     @Bind(R.id.login_button)
     Button mLoginButton;
 
+    @Bind (R.id.search)
+    AutoCompleteTextView mSearchTextView;
 
     private User mUser;
     private FirebaseListAdapter<Recipe> mListAdapter;
@@ -56,7 +59,6 @@ public class RecipeListActivity extends ListActivity {
 
     private static final int NEW_RECIPE_REQUEST = 0;
 
-    private static final String ORDER_SEARCH_BY_EMAIL = "ownerEmail";
 
 
     @Override
@@ -74,7 +76,11 @@ public class RecipeListActivity extends ListActivity {
         {
             @Override
             public void onAuthStateChanged(AuthData authData) {
+                mSearchTextView.setText("");
+                changeRecipeAdapterQuery(FIREBASE_REF_FULL_RECIPE_LIST, true);
                 setAuthenticatedUser(authData);
+
+
             }
         };
         /* Check if the user is authenticated with Firebase already. If this is the case we can set the authenticated
@@ -83,7 +89,7 @@ public class RecipeListActivity extends ListActivity {
 
 
         /**Add the Recipe List Adapter**/
-        changeRecipeAdapterQuery(FIREBASE_REF_FULL_RECIPE_LIST);
+        changeRecipeAdapterQuery(FIREBASE_REF_FULL_RECIPE_LIST, true);
 
         /** Autocomplete **/
         setupAutoComplete();
@@ -114,8 +120,9 @@ public class RecipeListActivity extends ListActivity {
     }
 
 
-    private void changeRecipeAdapterQuery(Query q) {
-        if (!q.equals(mLastFirebase)) {
+    private void changeRecipeAdapterQuery(Query q, boolean isForceFlush) {
+        Log.e(LOG_TAG, "Change recipe adapter called");
+        if (!q.equals(mLastFirebase) || isForceFlush) {
             mLastFirebase = q;
             if (mListAdapter != null) {
                 mListAdapter.cleanup();
@@ -146,10 +153,26 @@ public class RecipeListActivity extends ListActivity {
     }
 
     private void openRecipe(String key) {
-        Intent i = new Intent(this, RecipeDetailActivity.class);
+        final Intent i = new Intent(this, RecipeDetailActivity.class);
         i.putExtra(RecipeDetailActivity.USERNAME_EXTRA, mUser.getEmail());
-        if (key != null) i.putExtra(RecipeDetailActivity.RECIPE_ID_EXTRA, key);
-        startActivityForResult(i, NEW_RECIPE_REQUEST);// get what's added and add it
+        if (key != null) {
+            i.putExtra(RecipeDetailActivity.RECIPE_ID_EXTRA, key);
+            FIREBASE_REF_FULL_RECIPE_LIST.child(key).child(Recipe.LAST_VIEWED_PATH).
+                    setValue(ServerValue.TIMESTAMP, new Firebase.CompletionListener() {
+                        @Override
+                        public void onComplete(FirebaseError firebaseError, Firebase firebase) {
+                            if (firebaseError != null) {
+                                i.putExtra(RecipeDetailActivity.HAS_EDIT_PERMISSION, false);
+                            } else {
+                                i.putExtra(RecipeDetailActivity.HAS_EDIT_PERMISSION, true);
+                            }
+                            startActivityForResult(i, NEW_RECIPE_REQUEST);
+                        }
+                    });
+        } else {
+            i.putExtra(RecipeDetailActivity.HAS_EDIT_PERMISSION, true);
+            startActivityForResult(i, NEW_RECIPE_REQUEST);// get what's added and add it
+        }
     }
 
     @Override
@@ -187,6 +210,7 @@ public class RecipeListActivity extends ListActivity {
 
         if (authData != null) {
 
+            //In this case the user is logging in
             mUserEventListener = new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot snapshot) {
@@ -211,6 +235,7 @@ public class RecipeListActivity extends ListActivity {
             FIREBASE_REF_FULL_USER_LIST.child(authData.getUid()).
                     addValueEventListener(mUserEventListener);
         } else {
+            //In this case the user is logged out
             Log.e(LOG_TAG, "Logged out user");
             if (mUser != null) {
                 Log.e(LOG_TAG, "The user was " + mUser.getEmail());
@@ -219,7 +244,6 @@ public class RecipeListActivity extends ListActivity {
             }
             assert mUserEventListener == null; //Crazy if this is not true
             mUser = null;
-
         }
     }
 
@@ -297,20 +321,17 @@ public class RecipeListActivity extends ListActivity {
 
         };
 
-
-        AutoCompleteTextView textView = (AutoCompleteTextView)
-                findViewById(R.id.search);
-        textView.setAdapter(autocompleteFBAdapter);
-        textView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mSearchTextView.setAdapter(autocompleteFBAdapter);
+        mSearchTextView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 String email = autocompleteFBAdapter.getItem(i);
 
                 changeRecipeAdapterQuery(FIREBASE_REF_FULL_RECIPE_LIST.
-                        orderByChild(ORDER_SEARCH_BY_EMAIL).equalTo(email));
+                        orderByChild(Recipe.OWNER_EMAIL_PATH).equalTo(email), false);
             }
         });
-        textView.addTextChangedListener(new TextWatcher() {
+        mSearchTextView.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
@@ -324,7 +345,7 @@ public class RecipeListActivity extends ListActivity {
             @Override
             public void afterTextChanged(Editable editable) {
                 if (editable.length() < 2) {
-                    changeRecipeAdapterQuery(FIREBASE_REF_FULL_RECIPE_LIST);
+                    changeRecipeAdapterQuery(FIREBASE_REF_FULL_RECIPE_LIST, false);
                 }
 
             }

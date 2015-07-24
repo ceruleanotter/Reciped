@@ -13,6 +13,7 @@
         android:layout_width="0dp"
         android:layout_height="30dp"
         android:layout_weight="4"
+        android:maxLines="1"
         android:ellipsize="end"
         />
 </LinearLayout>

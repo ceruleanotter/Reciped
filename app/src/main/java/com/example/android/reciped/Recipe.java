@@ -11,7 +11,11 @@ public class Recipe {
     private String ownerUid;
     private String instructions;
     private String name;
+    private String lastViewed;
     private List<Ingredient> ingredients = new ArrayList<>();
+
+    public static final String OWNER_EMAIL_PATH = "ownerEmail";
+    public static final String LAST_VIEWED_PATH = "lastViewed";
     public static final String FIREBASE_RECIPE_PATH = "recipe";
 
 
@@ -47,5 +51,9 @@ public class Recipe {
 
     public List<Ingredient> getIngredients() {
         return ingredients;
+    }
+
+    public String getLastViewed() {
+        return lastViewed;
     }
 }

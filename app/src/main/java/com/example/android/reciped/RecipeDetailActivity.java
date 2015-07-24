@@ -30,13 +30,16 @@ public class RecipeDetailActivity extends AppCompatActivity {
     @Bind(R.id.recipe_name)
     TextView mNameTextview;
 
+    @Bind(R.id.recipe_owner_email)
+    TextView mOwnerEmailTextView;
+
     @Bind(R.id.list_ingredients)
     LinearLayout mIngredientsLinearLayout;
 
 
     public static final String USERNAME_EXTRA = "username_extra";
     public static final String RECIPE_ID_EXTRA = "recipe_id";
-
+    public static final String HAS_EDIT_PERMISSION = "edit_permission";
 
     private Firebase mFirebaseRecipeRef;
     private Firebase mFirebaseRecipeRefSpecificRef;
@@ -44,11 +47,24 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private String mUserEmail;
     private String mKey = null;
 
+    private int mIngredientLayout;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_recipe_detail);
+
+        /** setting view to appropriate permissions **/
+        mIngredientLayout = R.layout.item_ingredient;
+        if (!(getIntent().getBooleanExtra(HAS_EDIT_PERMISSION, true))) {
+            mIngredientLayout = R.layout.item_ingredient_read_only;
+            setContentView(R.layout.activity_recipe_detail_read_only);
+        } else {
+            setContentView(R.layout.activity_recipe_detail);
+        }
+
+
+
         ButterKnife.bind(this);
         mFirebaseRecipeRef = new Firebase(RecipeListActivity.FIREBASE_URL + Recipe.FIREBASE_RECIPE_PATH);
         mFirebaseRecipeRefSpecificRef = null;
@@ -62,6 +78,10 @@ public class RecipeDetailActivity extends AppCompatActivity {
         } else {
             addIngredient(null);
         }
+
+
+
+
 
 
 
@@ -99,10 +119,10 @@ public class RecipeDetailActivity extends AppCompatActivity {
     }
 
     public void addIngredient(Ingredient i) {
-        View inflatedLayout = mInflater.inflate(R.layout.item_ingredient, null, false);
+        View inflatedLayout = mInflater.inflate(mIngredientLayout, null, false);
         if (i != null) {
-            ((EditText) inflatedLayout.findViewById(R.id.ingredient_name)).setText(i.getName());
-            ((EditText) inflatedLayout.findViewById(R.id.ingredient_amount)).setText(i.getAmount()+"");
+            ((TextView) inflatedLayout.findViewById(R.id.ingredient_name)).setText(i.getName());
+            ((TextView) inflatedLayout.findViewById(R.id.ingredient_amount)).setText(i.getAmount() + "");
         }
         mIngredientsLinearLayout.addView(inflatedLayout, mIngredientsLinearLayout.getChildCount() - 1);
     }
@@ -114,7 +134,8 @@ public class RecipeDetailActivity extends AppCompatActivity {
     }
 
     private void saveData() {
-        Firebase thisRecipeRef = null;
+        final Firebase thisRecipeRef;
+        boolean saveSuccess = true;
         if (mKey == null) {
             thisRecipeRef = mFirebaseRecipeRef.push();
         } else {
@@ -132,22 +153,43 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
             String currentName = getStringFromView(currentRow, R.id.ingredient_name);
             String currentAmountString = getStringFromView(currentRow, R.id.ingredient_amount);
+
+
+
             if (!currentName.isEmpty() && !currentAmountString.isEmpty()) {
-                int currentAmount = Integer.parseInt(currentAmountString);
+                int currentAmount = 0;
+                try {
+                    currentAmount = Integer.parseInt(currentAmountString);
+                } catch (NumberFormatException e) {
+                    saveSuccess = false;
+                    ((EditText)currentRow.findViewById(R.id.ingredient_amount)).setError("There's something wrong with this number. It might be too large or not a number.");
+                }
                 currentRecipe.addIngredient(currentName, currentAmount);
             } else {
                 Log.e(LOG_TAG, "Current name: " + currentName + " currentAmount: " + currentAmountString + " is empty");
             }
 
         }
+        if (saveSuccess) {
+            thisRecipeRef.setValue(currentRecipe, new Firebase.CompletionListener() {
+                @Override
+                public void onComplete(FirebaseError firebaseError, Firebase firebase) {
+                    if (firebaseError != null) {
+                        switch (firebaseError.getCode()) {
+                            case FirebaseError.PERMISSION_DENIED :
+                                mNameTextview.setError("You don't have permission to edit this recipe");
+                        }
 
+                    } else {
+                        Intent returnIntent = new Intent();
+                        returnIntent.putExtra(RECIPE_ID_EXTRA, thisRecipeRef.getKey());
+                        setResult(RESULT_OK, returnIntent);
+                        finish();
+                    }
+                }
+            });
 
-        thisRecipeRef.setValue(currentRecipe);
-
-        Intent returnIntent = new Intent();
-        returnIntent.putExtra(RECIPE_ID_EXTRA, thisRecipeRef.getKey());
-        setResult(RESULT_OK, returnIntent);
-        finish();
+        }
     }
 
 
@@ -162,6 +204,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
             public void onDataChange(DataSnapshot dataSnapshot) {
                 Recipe r = dataSnapshot.getValue(Recipe.class);
                 mInstructionsTextView.setText(r.getInstructions());
+                mOwnerEmailTextView.setText(r.getOwnerEmail());
                 mNameTextview.setText(r.getName());
                 for (Ingredient currentIngredient : r.getIngredients()) {
                     addIngredient(currentIngredient);
