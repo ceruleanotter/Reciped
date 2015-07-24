@@ -57,6 +57,10 @@ public class LoginActivity extends Activity {
         // Set up the login form.
         mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
 
+        // Set up autocomplete
+        final UserAutocompleteAdapter autocompleteFBAdapter = new UserAutocompleteAdapter(this);
+        mEmailView.setAdapter(autocompleteFBAdapter);
+
 
         mPasswordView = (EditText) findViewById(R.id.password);
         mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {

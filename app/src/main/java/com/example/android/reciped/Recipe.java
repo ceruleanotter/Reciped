@@ -1,6 +1,7 @@
 package com.example.android.reciped;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -13,10 +14,12 @@ public class Recipe {
     private String name;
     private String lastViewed;
     private List<Ingredient> ingredients = new ArrayList<>();
+    private HashMap<String, Boolean> canView;
 
     public static final String OWNER_EMAIL_PATH = "ownerEmail";
     public static final String LAST_VIEWED_PATH = "lastViewed";
     public static final String FIREBASE_RECIPE_PATH = "recipe";
+    public static final String FIREBASE_CAN_VIEW_PATH = "canView";
 
 
     public Recipe() {
@@ -27,6 +30,7 @@ public class Recipe {
         this.name = name;
         this.ownerEmail = ownerEmail;
         this.ownerUid = ownerUid;
+        this.canView = new HashMap<String, Boolean>();
     }
 
     public void addIngredient(String name, int amount) {
@@ -55,5 +59,9 @@ public class Recipe {
 
     public String getLastViewed() {
         return lastViewed;
+    }
+
+    public HashMap<String, Boolean> getCanView() {
+        return canView;
     }
 }

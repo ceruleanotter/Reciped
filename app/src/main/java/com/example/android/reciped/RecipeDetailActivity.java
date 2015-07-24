@@ -49,21 +49,23 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
     private int mIngredientLayout;
 
+    private boolean mEditPermission;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         /** setting view to appropriate permissions **/
-        mIngredientLayout = R.layout.item_ingredient;
-        if (!(getIntent().getBooleanExtra(HAS_EDIT_PERMISSION, true))) {
+        mEditPermission = (getIntent().getBooleanExtra(HAS_EDIT_PERMISSION, false));
+
+        if (mEditPermission) {
+            mIngredientLayout = R.layout.item_ingredient;
+            setContentView(R.layout.activity_recipe_detail);
+        } else {
             mIngredientLayout = R.layout.item_ingredient_read_only;
             setContentView(R.layout.activity_recipe_detail_read_only);
-        } else {
-            setContentView(R.layout.activity_recipe_detail);
         }
-
-
 
         ButterKnife.bind(this);
         mFirebaseRecipeRef = new Firebase(RecipeListActivity.FIREBASE_URL + Recipe.FIREBASE_RECIPE_PATH);

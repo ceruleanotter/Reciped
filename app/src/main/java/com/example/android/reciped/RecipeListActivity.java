@@ -3,6 +3,7 @@ package com.example.android.reciped;
 import android.app.ListActivity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -39,6 +40,9 @@ public class RecipeListActivity extends ListActivity {
 
     @Bind (R.id.search)
     AutoCompleteTextView mSearchTextView;
+
+    @Bind (R.id.fab)
+    FloatingActionButton mFab;
 
     private User mUser;
     private FirebaseListAdapter<Recipe> mListAdapter;
@@ -249,8 +253,11 @@ public class RecipeListActivity extends ListActivity {
         if (mLoginButton.getText().toString() == getString(R.string.login)) {
             assert mUser == null;
             login();
+            mFab.setVisibility(View.VISIBLE);
+
         } else {
             mLoginButton.setText(getString(R.string.login));
+            mFab.setVisibility(View.GONE);
             FIREBASE_REF_FULL_RECIPE_LIST.unauth();
 
         }
