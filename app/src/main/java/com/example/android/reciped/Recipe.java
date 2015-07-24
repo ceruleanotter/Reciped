@@ -7,7 +7,8 @@ import java.util.List;
  * Created by lyla on 7/17/15.
  */
 public class Recipe {
-    private String owner;
+    private String ownerEmail;
+    private String ownerUid;
     private String instructions;
     private String name;
     private List<Ingredient> ingredients = new ArrayList<>();
@@ -17,22 +18,23 @@ public class Recipe {
     public Recipe() {
     }
 
-    public Recipe(String instructions, String name, String owner) {
+    public Recipe(String instructions, String name, String ownerEmail, String ownerUid) {
         this.instructions = instructions;
         this.name = name;
-        this.owner = owner;
+        this.ownerEmail = ownerEmail;
+        this.ownerUid = ownerUid;
     }
 
     public void addIngredient(String name, int amount) {
         ingredients.add(new Ingredient(name, amount));
     }
 
-    public String getOwner() {
-        return owner;
+    public String getOwnerEmail() {
+        return ownerEmail;
     }
 
-    public void setOwner(String owner) {
-        this.owner = owner;
+    public String getOwnerUid() {
+        return ownerUid;
     }
 
     public String getInstructions() {

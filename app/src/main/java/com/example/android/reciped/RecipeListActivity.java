@@ -56,6 +56,8 @@ public class RecipeListActivity extends ListActivity {
 
     private static final int NEW_RECIPE_REQUEST = 0;
 
+    private static final String ORDER_SEARCH_BY_EMAIL = "ownerEmail";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -305,7 +307,7 @@ public class RecipeListActivity extends ListActivity {
                 String email = autocompleteFBAdapter.getItem(i);
 
                 changeRecipeAdapterQuery(FIREBASE_REF_FULL_RECIPE_LIST.
-                        orderByChild("owner").equalTo(email));
+                        orderByChild(ORDER_SEARCH_BY_EMAIL).equalTo(email));
             }
         });
         textView.addTextChangedListener(new TextWatcher() {

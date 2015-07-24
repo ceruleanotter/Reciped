@@ -123,7 +123,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
         Recipe currentRecipe = new Recipe(mInstructionsTextView.getText().toString(),
                 mNameTextview.getText().toString(),
-                mUserEmail);
+                mUserEmail, mFirebaseRecipeRef.getAuth().getUid());
 
         //Subtract 1 for the + button
         for (int i = 0; i < mIngredientsLinearLayout.getChildCount() - 1; i++) {
