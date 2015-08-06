@@ -84,7 +84,7 @@ public class RecipeListActivity extends ListActivity {
 
             }
         };
-        /* Check if the user is authenticated with Firebase already. If this is the case we can set the authenticated
+        /* TODO Check if the user is authenticated with Firebase already. If this is the case we can set the authenticated
          * user and hide hide any login buttons */
         FIREBASE_REF_FULL_RECIPE_LIST.addAuthStateListener(mAuthStateListener);
 
@@ -121,7 +121,14 @@ public class RecipeListActivity extends ListActivity {
     }
 
 
+    /**
+     * Remakes the adapter to be attached to the right query
+     * @param q The query to have the adapter show
+     * @param isForceFlush Whether the adapter should show everything.
+     */
     private void changeRecipeAdapterQuery(Query q, boolean isForceFlush) {
+        //TODO I decided to just keep making and re-attaching adapters. I doubt this is the best way
+        //to do this.
         Log.e(LOG_TAG, "Change recipe adapter called");
         if (!q.equals(mLastFirebase) || isForceFlush) {
             mLastFirebase = q;
@@ -153,6 +160,10 @@ public class RecipeListActivity extends ListActivity {
         openRecipe(null);
     }
 
+    /**
+     * Opens either a black or populated recipe, based on key.
+     * @param key this is the key of the recipe to open. It is null if a new recipe is being made.
+     */
     private void openRecipe(String key) {
         final Intent i = new Intent(this, RecipeDetailActivity.class);
         i.putExtra(RecipeDetailActivity.USERNAME_EXTRA, mUser.getEmail());
@@ -176,6 +187,12 @@ public class RecipeListActivity extends ListActivity {
         }
     }
 
+    /**
+     * This gets called in two cases, after the recipe is editedand after a user logs in.
+     * @param requestCode
+     * @param resultCode
+     * @param data
+     */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // Check which request we're responding to
@@ -183,6 +200,9 @@ public class RecipeListActivity extends ListActivity {
             // Make sure the request was successful
             if (resultCode == RESULT_OK) {
 
+                //TODO if the recipe was succsefully created, add it to the book here. I'm not sure
+                //if this is the best place to do this. It only occurs if the original callback
+                //returned true in the RecipeDetailActivity
                 String recipeId = data.getStringExtra(RecipeDetailActivity.RECIPE_ID_EXTRA);
                 Firebase recipeBook = FIREBASE_REF_FULL_USER_LIST.child(mUser.getUid()).
                         child(User.FIREBASE_RECIPE_BOOK_PATH);
@@ -202,12 +222,19 @@ public class RecipeListActivity extends ListActivity {
     }
 
 
+    /**
+     * This method takes some auth data, and using that, sets the current user and sets an event
+     * listener on that user. It does this so that if that user's info changes, the internal object
+     * will be sync'd. If the authData is null (no user logged in), it clears out the
+     * associated variables.
+     * @param authData which will either contained a newly logged in user or null for no user
+     */
     private void setAuthenticatedUser(AuthData authData) {
-        //This is only called once
 
+        //TODO this whole method is a little crazy
         if (authData != null) {
 
-            //In this case the user is logging in
+            //Makes a listener to update the currently logged in user
             mUserEventListener = new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot snapshot) {
@@ -219,6 +246,8 @@ public class RecipeListActivity extends ListActivity {
                             mLoginButton.setText(getString(R.string.logout)); //changes to logout if we're still tracking a user
                             Log.e(LOG_TAG, "Logged in user " + mUser.getEmail());
                         } else {
+                            //Was getting this as an error, I think related to a hiccup/mismatch of
+                            //my users table and the interally stored fb users.
                             Log.e(LOG_TAG, "In strange state where mUser is null after getting the user");
                         }
                     }
@@ -270,12 +299,17 @@ public class RecipeListActivity extends ListActivity {
         mSearchTextView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                //Gets the owner just clicked on
                 String email = autocompleteFBAdapter.getItem(i);
 
+                //This resets the adapter so that it's only keeping track of the selected owner
                 changeRecipeAdapterQuery(FIREBASE_REF_FULL_RECIPE_LIST.
                         orderByChild(Recipe.OWNER_EMAIL_PATH).equalTo(email), false);
             }
         });
+
+        //This listener just picks up when the user has less than 2 character typed, and if so, refreshes
+        //the adapter to show all recipes
         mSearchTextView.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {

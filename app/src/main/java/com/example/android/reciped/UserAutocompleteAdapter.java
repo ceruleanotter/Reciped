@@ -7,7 +7,12 @@ import android.widget.TextView;
 import com.firebase.client.Firebase;
 
 /**
- * Created by lyla on 7/24/15.
+ * @author Lyla
+ * @since 7/24/15
+ *
+ * This is a concrete class of FirebaseAutocompleteAdapter specifically for dealing with User objects.
+ * It will show the user's emails in the autocomplete.
+ *
  */
 public class UserAutocompleteAdapter extends FirebaseAutocompleteAdapter<User> {
 

@@ -36,7 +36,9 @@ public abstract class FirebaseListAdapter<T> extends BaseAdapter {
     protected int mLayout;
     protected LayoutInflater mInflater;
     private List<T> mModels;
-    private BiMap<String, T> mModelKeys; /*change this to a bimap to be able to get the key for passing in as an extra when the list is clicked*/
+
+    // TODO: I changed this to a bimap to be able to get the key for passing in as an extra when the list is clicked
+    private BiMap<String, T> mModelKeys;
     private ChildEventListener mListener;
 
 

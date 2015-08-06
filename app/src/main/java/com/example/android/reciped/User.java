@@ -3,7 +3,11 @@ package com.example.android.reciped;
 import java.util.HashMap;
 
 /**
- * Created by lyla on 7/17/15.
+ * @author Lyla
+ * @since 7/17/15
+ *
+ * This is a POJO to represent the user
+ *
  */
 public class User {
     private String email;

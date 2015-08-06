@@ -1,7 +1,11 @@
 package com.example.android.reciped;
 
 /**
- * Created by lyla on 7/22/15.
+ * @author Lyla
+ * @since 7/22/15
+ *
+ * This is a POJO to represent ingreidents in the app
+ *
  */
 public class Ingredient {
     String name;

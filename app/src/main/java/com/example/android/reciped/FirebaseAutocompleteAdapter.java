@@ -13,7 +13,17 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Created by lyla on 7/23/15.
+ * @author Lyla
+ * @since 7/22/15
+ *
+ * This class is a subclass of the generic FirebaseListAdapter that allows for autocomplete by
+ * implemting Filterable. It also requires implementations of two methods:
+ *
+ * shouldAddToList - defines what should or should not end up in the autocomplete list
+ * massageItemToString - takes the firebase object and creates an appropriate string to put into
+ * the autocomplete list.
+ *
+ * @param <T> The class type to use as a model for the data contained in the children of the given Firebase location
  */
 abstract public class FirebaseAutocompleteAdapter<T> extends FirebaseListAdapter<T> implements Filterable {
 
@@ -63,6 +73,8 @@ abstract public class FirebaseAutocompleteAdapter<T> extends FirebaseListAdapter
         return view;
     }
 
+
+    //TODO Everything below here is the meat of what was added to make autocomplete a reality
     @Override
     public Filter getFilter() {
         return new Filter() {
@@ -99,6 +111,25 @@ abstract public class FirebaseAutocompleteAdapter<T> extends FirebaseListAdapter
     }
 
 
+    /**
+     * Instead of directly returning the item (a string is required), this method is called to
+     * generate a string from the current item.
+     *
+     * @param model The object containing the data used to populate the view
+     * @return The String to show in the autocomplete list
+     */
+
     protected abstract String massageItemToString(T model);
+
+    /**
+     * This method takes the current object and the entered String and decides whether it should be
+     * added to the autocomplete list.
+     *
+     * @param currentObject The object that we're testing to see if it should be added to the auto
+     *                      complete list
+     * @param enteredString The string that was entered in the autocomplete textbox
+     * @return This returns true if the item should be added to the autocomplete list and false
+     * otherwise.
+     */
     protected abstract boolean shouldAddToList(T currentObject, CharSequence enteredString);
 }

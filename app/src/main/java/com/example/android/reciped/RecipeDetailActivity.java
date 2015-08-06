@@ -17,6 +17,8 @@ import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
 import com.firebase.client.ValueEventListener;
 
+import java.util.ArrayList;
+
 import butterknife.Bind;
 import butterknife.ButterKnife;
 
@@ -48,8 +50,10 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private String mKey = null;
 
     private int mIngredientLayout;
-
     private boolean mEditPermission;
+
+    private boolean mWorldViewable;
+    private ArrayList<User> mSharedWithList;
 
 
     @Override
@@ -57,6 +61,8 @@ public class RecipeDetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         /** setting view to appropriate permissions **/
+        //TODO In this case I chose one class for both the editable and non-editable version
+        //TODO Is this a good/bad/neutral design choice?
         mEditPermission = (getIntent().getBooleanExtra(HAS_EDIT_PERMISSION, false));
 
         if (mEditPermission) {
@@ -80,11 +86,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
         } else {
             addIngredient(null);
         }
-
-
-
-
-
 
 
     }
@@ -120,6 +121,13 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * Adds an ingredient. This is done in two situations:
+     * 1. The ingredient is a new one, i is null and the view is blank
+     * 2. The ingedients exists, it populates the list with the ingredient info for editing.
+     *
+     * @param i
+     */
     public void addIngredient(Ingredient i) {
         View inflatedLayout = mInflater.inflate(mIngredientLayout, null, false);
         if (i != null) {
@@ -135,18 +143,28 @@ public class RecipeDetailActivity extends AppCompatActivity {
         Log.e(LOG_TAG, "Removed the view " + view.toString());
     }
 
+    //TODO perhaps foolishly I wait to save all data until the user presses the "Save" button.
+    //In the recipe app, only the owner edits the recipe, thus skirting around the issue of
+    //multiple editor concurrency.
+
+    /**
+     * Saves the data currently in the boxes into Firebase.
+     */
     private void saveData() {
         final Firebase thisRecipeRef;
         boolean saveSuccess = true;
+
+        //Sees if you're making a new recipe or editing one
         if (mKey == null) {
             thisRecipeRef = mFirebaseRecipeRef.push();
         } else {
             thisRecipeRef = mFirebaseRecipeRef.child(mKey);
         }
 
+        //Making a new recipe object.
         Recipe currentRecipe = new Recipe(mInstructionsTextView.getText().toString(),
                 mNameTextview.getText().toString(),
-                mUserEmail, mFirebaseRecipeRef.getAuth().getUid());
+                mUserEmail, mFirebaseRecipeRef.getAuth().getUid(), false);
 
         //Subtract 1 for the + button
         for (int i = 0; i < mIngredientsLinearLayout.getChildCount() - 1; i++) {
@@ -157,14 +175,13 @@ public class RecipeDetailActivity extends AppCompatActivity {
             String currentAmountString = getStringFromView(currentRow, R.id.ingredient_amount);
 
 
-
             if (!currentName.isEmpty() && !currentAmountString.isEmpty()) {
                 int currentAmount = 0;
                 try {
                     currentAmount = Integer.parseInt(currentAmountString);
                 } catch (NumberFormatException e) {
                     saveSuccess = false;
-                    ((EditText)currentRow.findViewById(R.id.ingredient_amount)).setError("There's something wrong with this number. It might be too large or not a number.");
+                    ((EditText) currentRow.findViewById(R.id.ingredient_amount)).setError("There's something wrong with this number. It might be too large or not a number.");
                 }
                 currentRecipe.addIngredient(currentName, currentAmount);
             } else {
@@ -177,8 +194,10 @@ public class RecipeDetailActivity extends AppCompatActivity {
                 @Override
                 public void onComplete(FirebaseError firebaseError, Firebase firebase) {
                     if (firebaseError != null) {
+                        //TODO: This shouldn't happen because the user should never be shown the
+                        //editable version of the details screen if they have the wrong permissions
                         switch (firebaseError.getCode()) {
-                            case FirebaseError.PERMISSION_DENIED :
+                            case FirebaseError.PERMISSION_DENIED:
                                 mNameTextview.setError("You don't have permission to edit this recipe");
                         }
 
@@ -201,6 +220,8 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
     private void populateViewFromData(String key) {
         mFirebaseRecipeRefSpecificRef = mFirebaseRecipeRef.child(key);
+        //TODO this is a single event because of the save button, but probably could be a normal
+        //addValueEventListener
         mFirebaseRecipeRefSpecificRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -221,4 +242,8 @@ public class RecipeDetailActivity extends AppCompatActivity {
     }
 
 
+    public void onSharingOptionsClicked(View view) {
+
+
+    }
 }
